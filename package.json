@@ -38,6 +38,7 @@
     ]
   },
   "devDependencies": {
+    "@0xsquid/squid-types": "^0.1.75",
     "@typescript-eslint/parser": "~5.45",
     "eslint-plugin-n8n-nodes-base": "^1.11.0",
     "gulp": "^4.0.2",
@@ -47,5 +48,9 @@
   },
   "peerDependencies": {
     "n8n-workflow": "*"
+  },
+  "dependencies": {
+    "@0xsquid/sdk": "^2.8.11",
+    "axios": "^1.6.7"
   }
 }
