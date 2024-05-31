@@ -6,6 +6,7 @@ import {
 	NodeOperationError,
 } from 'n8n-workflow';
 import { Squid } from '@0xsquid/sdk';
+// import { ethers } from 'ethers';
 
 export class SquidRouter implements INodeType {
 	description: INodeTypeDescription = {
@@ -28,9 +29,10 @@ export class SquidRouter implements INodeType {
 		],
 		properties: [
 			{
-				displayName: 'Action',
-				name: 'action',
+				displayName: 'Operation',
+				name: 'operation',
 				type: 'options',
+				noDataExpression: true,
 				options: [
 					{
 						name: 'Build Swap Route',
@@ -57,6 +59,120 @@ export class SquidRouter implements INodeType {
 				required: true,
 				description: 'Format of the response output',
 			},
+			{
+				displayName: 'Sender Address',
+				name: 'sender',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Recipient Address',
+				name: 'recipient',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Source Chain ID',
+				name: 'sourceChain',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Target Chain ID',
+				name: 'targetChain',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Source Token Address',
+				name: 'sourceToken',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Target Token Address',
+				name: 'targetToken',
+				type: 'string',
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Amount',
+				name: 'amount',
+				type: 'number',
+				typeOptions: {
+					numberPrecision: 8,
+				},
+				required: true,
+				default: '',
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			{
+				displayName: 'Slippage',
+				name: 'slippage',
+				type: 'number',
+				typeOptions: {
+					numberPrecision: 2,
+				},
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			},
+			//TODO: Make optional
+			{
+				displayName: 'Enable Boost',
+				name: 'boost',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						operation: ['route']
+					}
+				},
+			}
 		],
 	};
 
@@ -68,27 +184,48 @@ export class SquidRouter implements INodeType {
 			baseUrl: 'https://apiplus.squidrouter.com',
 			// @ts-ignore
 			integratorId: integrator,
-			// headers: {
-			// 	'Content-Type': ''
-			// },
 		});
-		// const response = await this.helpers.httpRequest({
-		// 	url: 'https://apiplus.squidrouter.com/v2/sdk-info',
-		// 	method: 'GET',
-		// 	// disableFollowRedirect: true,
-		// 	json: true,
-		// 	headers: {
-		// 		'x-integrator-id': integrator
-		// 	}
-		// });
-		// console.log(response);
 		await squid.init();
 		for (let index = 0; index < items.length; index++) {
-			// const item: INodeExecutionData = items[itemIndex];
 			try {
-				const action = this.getNodeParameter('action', index, '') as string;
-				switch (action) {
+				const operation = this.getNodeParameter('operation', index, '') as string;
+				switch (operation) {
 					case 'route':
+						{
+							const sender = this.getNodeParameter('sender', index, '') as string;
+							const recipient = this.getNodeParameter('recipient', index, '') as string;
+							const sourceChain = this.getNodeParameter('sourceChain', index, '') as string;
+							const targetChain = this.getNodeParameter('targetChain', index, '') as string;
+							const sourceToken = this.getNodeParameter('sourceToken', index, '') as string;
+							const targetToken = this.getNodeParameter('targetToken', index, '') as string;
+							const amount = this.getNodeParameter('amount', index, 0) as number;
+							const boost = this.getNodeParameter('boost', index) as boolean;
+							const slippage = this.getNodeParameter('boost', index) as number;
+							const response = await squid.getRoute({
+								fromAddress: sender,
+								fromChain: sourceChain,
+								fromToken: sourceToken,
+								fromAmount: String(amount * 10**18),
+								toChain: targetChain,
+								toToken: targetToken,
+								toAddress: recipient,
+								slippage,
+								enableBoost: boost,
+								//TODO: quoteOnly?: boolean;
+								//TODO: preHook?: Hook;
+								//TODO: postHook?: Omit<Hook, "fundAmount" | "fundToken">;
+								//TODO: prefer?: DexName[];
+								//TODO: receiveGasOnDestination?: boolean;
+								//TODO: fallbackAddresses?: FallbackAddress[];
+								//TODO: bypassGuardrails?: boolean;
+								//TODO: onChainQuoting?: boolean;
+								// @ts-ignore
+								enableForecall: true,
+								// @ts-ignore
+								slippageConfig: { autoMode: 1 },
+							});
+							outputs.push({ json: response });
+						}
 						break;
 					case 'execute':
 						break;
@@ -106,7 +243,7 @@ export class SquidRouter implements INodeType {
 						break;
 					default:
 						// eslint-disable-next-line n8n-nodes-base/node-execute-block-wrong-error-thrown
-						throw new Error(`Unsupported action: ${action}`);
+						throw new Error(`Unsupported action: ${operation}`);
 				}
 			} catch (error) {
 				if (this.continueOnFail()) {
